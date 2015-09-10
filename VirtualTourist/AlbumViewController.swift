@@ -10,6 +10,7 @@ import UIKit
 import MapKit
 import CoreData
 
+
 class AlbumViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     
     let context = (UIApplication.sharedApplication().delegate as! AppDelegate).managedObjectContext
@@ -119,6 +120,8 @@ class AlbumViewController: UIViewController, UICollectionViewDataSource, UIColle
         removePhoto(indexPath)
     }
     
+    
+    
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         
         let cell = collectionView.dequeueReusableCellWithReuseIdentifier("Cell", forIndexPath: indexPath) as! PhotoCollectionViewCell
@@ -129,6 +132,18 @@ class AlbumViewController: UIViewController, UICollectionViewDataSource, UIColle
         
         if docManager.fileExistsAtPath(photo.filePath!) {
             cell.imageCell.image = UIImage(contentsOfFile: photo.filePath!) //add image to cell
+        } else {
+            //this will happen if the application is restarted in the simulator by using Xcode build and run
+            //it occurs because the document directory location changes.  However, if the application is stopped and restarted within
+            //the simulator, all is well.
+            
+            //reload photographs because application was restarted from Xcode interface which changed the document directory
+            //path stored in core data
+            let documents = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as! String
+            let placeholderPath = documents + "/" + placeHolderImageName
+            
+            photo.filePath = placeholderPath  //change photo file path to force a reload of the image
+            context!.save(nil)
         }
         
         if photo.filePath!.lastPathComponent == placeHolderImageName {
@@ -144,7 +159,7 @@ class AlbumViewController: UIViewController, UICollectionViewDataSource, UIColle
     func controllerDidChangeContent(controller: NSFetchedResultsController) {
         //required for NSFetchedResultsController to track changes
     }
-    
+ 
     func updatePhotos(nextPage: Bool)
     {
         let docManager = NSFileManager.defaultManager()
